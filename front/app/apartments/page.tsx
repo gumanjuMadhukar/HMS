@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
+import { useToast } from '@/components/ToastContext';
 import { 
   Home, 
   MapPin, 
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 
 export default function ApartmentsPage() {
+  const { success, error } = useToast();
   const [apartments, setApartments] = useState<any[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState('');
@@ -107,10 +109,11 @@ export default function ApartmentsPage() {
 
       const res = await hmsApi.bookApartment(payload);
       setLeaseSuccess(res.data);
+      success('Lease Application Confirmed', `Reference: ${res.data.booking_code}. Confirmation email sent!`);
       setSelectedApartmentRoom(null);
       setSelectedApartmentProperty(null);
     } catch (err: any) {
-      alert(err.message || 'Lease booking failed');
+      error('Lease Booking Failed', err.message || 'Lease booking failed');
     } finally {
       setBookingLoading(false);
     }

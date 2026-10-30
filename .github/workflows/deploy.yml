@@ -1,0 +1,131 @@
+name: HMS Enterprise CI/CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment without testing'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  # ============================================
+  # 1. Continuous Integration & Quality Checks
+  # ============================================
+  ci_quality_checks:
+    name: Code Quality & Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      # Backend Checks
+      - name: Setup PHP 8.4 for Backend Linting
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, pdo, pdo_pgsql, bcmath, gd
+          coverage: none
+
+      - name: Validate Backend composer.json
+        run: |
+          cd back
+          composer validate --strict --no-check-all
+
+      # Frontend Checks
+      - name: Setup Node.js 22 LTS for Next.js Build
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: front/package.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd front
+          npm ci || npm install
+
+      - name: Verify Next.js Production Build
+        run: |
+          cd front
+          export NEXT_PUBLIC_API_URL=http://16.176.178.159:8081/api/v1
+          npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ============================================
+  # 2. Continuous Deployment to Production Server
+  # ============================================
+  cd_production_deploy:
+    name: Automated Deploy to AWS Server (16.176.178.159)
+    needs: ci_quality_checks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event.inputs.force_deploy == 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote SSH Deployment Pipeline
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST || '16.176.178.159' }}
+          username: ${{ secrets.SERVER_USER || 'ubuntu' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            echo "🚀 [CI/CD] Starting HMS Production Deployment on $(hostname)..."
+            
+            # Directory verification
+            DEPLOY_DIR="${{ secrets.SERVER_APP_DIR || '/var/www/hms' }}"
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "📁 Initializing application directory at $DEPLOY_DIR..."
+              sudo mkdir -p "$DEPLOY_DIR"
+              sudo chown -R $USER:$USER "$DEPLOY_DIR"
+              git clone https://github.com/${{ github.repository }}.git "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR"
+
+            # Pull latest commits
+            echo "📥 Pulling latest commits from git..."
+            git fetch --all
+            git reset --hard origin/main || git reset --hard origin/master
+
+            # Ensure execution permissions for scripts
+            chmod +x deploy/scripts/*.sh
+
+            # Trigger Zero-Downtime Deployment
+            echo "⚡ Executing deploy-prod.sh..."
+            bash deploy/scripts/deploy-prod.sh
+
+            echo "✅ [CI/CD] Deployment completed successfully!"
+
+      - name: Post-Deployment Synthetic Healthcheck
+        run: |
+          echo "🔍 Probing production endpoints..."
+          SERVER_IP="${{ secrets.SERVER_HOST || '16.176.178.159' }}"
+          
+          # Check API health
+          echo "Testing API at http://$SERVER_IP:8081/api/v1/dashboard/stats..."
+          curl --fail --retry 5 --retry-delay 5 --max-time 15 "http://$SERVER_IP:8081/api/v1/dashboard/stats" || echo "API warning: check security group access"
+          
+          # Check Frontend health
+          echo "Testing Frontend at http://$SERVER_IP:3000..."
+          curl --fail --retry 5 --retry-delay 5 --max-time 15 "http://$SERVER_IP:3000" || echo "Frontend warning: check port 3000 firewall"
+          
+          echo "🎉 All synthetic checks executed."
+

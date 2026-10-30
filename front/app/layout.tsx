@@ -1,5 +1,6 @@
 import './globals.css';
 import Link from 'next/link';
+import { ToastProvider } from '@/components/ToastContext';
 
 export const metadata = {
   title: 'HMS - Global Hotel Booking & Hostel Management Platform',
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-slate-950 text-slate-100">
       <body className="min-h-full flex flex-col font-sans antialiased bg-[#070b14] text-slate-100 selection:bg-amber-400 selection:text-slate-950">
+        <ToastProvider>
         {/* Luxury Obsidian Top Navigation */}
         <header className="luxury-glass sticky top-0 z-50 border-b border-white/10 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
@@ -129,6 +131,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        </ToastProvider>
       </body>
     </html>
   );

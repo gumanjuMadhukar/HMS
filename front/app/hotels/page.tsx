@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
+import { useToast } from '@/components/ToastContext';
 import { 
   Hotel, 
   MapPin, 
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function HotelsPage() {
+  const { success, error } = useToast();
   const [hotels, setHotels] = useState<any[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState('');
@@ -71,9 +73,10 @@ export default function HotelsPage() {
         ...formData,
       });
       setBookingSuccess(res.data);
+      success('Hotel Reservation Confirmed', `Booking Code: ${res.data.booking_code}. Your room voucher is ready!`);
       setSelectedRoom(null);
     } catch (err: any) {
-      alert(err.message || 'Booking submission failed');
+      error('Booking Failed', err.message || 'Booking submission failed');
     } finally {
       setBookingLoading(false);
     }

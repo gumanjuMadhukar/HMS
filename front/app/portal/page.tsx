@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
+import { useToast } from '@/components/ToastContext';
 import { 
   CreditCard, 
   MapPin, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export default function UserFinderPortalPage() {
+  const { success, error, info } = useToast();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
@@ -37,8 +39,9 @@ export default function UserFinderPortalPage() {
     try {
       const res = await hmsApi.getUserBookings();
       setBookings(res.data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load user bookings:', err);
+      error('Fetch Error', err.message || 'Unable to retrieve reservations.');
     } finally {
       setLoading(false);
     }
@@ -64,11 +67,11 @@ export default function UserFinderPortalPage() {
         gateway: paymentGateway,
         amount: payAmount,
       });
-      alert(`Payment of NPR ${payAmount.toLocaleString()} via ${paymentGateway.toUpperCase()} confirmed!`);
+      success('Payment Reconciled', `Payment of NPR ${payAmount.toLocaleString()} via ${paymentGateway.toUpperCase()} confirmed!`);
       setShowPaymentModal(false);
       loadBookings();
     } catch (err: any) {
-      alert(err.message || 'Payment execution failed');
+      error('Payment Failed', err.message || 'Payment execution failed');
     } finally {
       setProcessingPay(false);
     }
@@ -78,10 +81,10 @@ export default function UserFinderPortalPage() {
     if (!confirm(`Are you sure you want to cancel reservation ${b.booking_code}?`)) return;
     try {
       await hmsApi.cancelUserBooking(b.id);
-      alert('Reservation cancelled.');
+      success('Reservation Cancelled', `Booking ${b.booking_code} was successfully cancelled.`);
       loadBookings();
     } catch (err: any) {
-      alert(err.message || 'Cancellation failed');
+      error('Cancellation Failed', err.message || 'Cancellation failed');
     }
   };
 

@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
 import { Crown, Hotel, Users, CreditCard, Lock, Sparkles, ArrowRight } from 'lucide-react';
+import { useToast } from '@/components/ToastContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { success, error: toastError } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +26,7 @@ export default function LoginPage() {
       if (res.access_token) {
         localStorage.setItem('hms_auth_token', res.access_token);
         localStorage.setItem('hms_user', JSON.stringify(res.user));
+        success('Session Authenticated', `Welcome back, ${res.user.name}!`);
 
         if (res.user.roles?.includes('super_admin')) {
           router.push('/admin');
@@ -34,7 +37,9 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      const msg = err.message || 'Invalid credentials';
+      setError(msg);
+      toastError('Authentication Failed', msg);
     } finally {
       setLoading(false);
     }

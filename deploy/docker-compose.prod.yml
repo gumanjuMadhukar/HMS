@@ -1,0 +1,144 @@
+# ============================================
+# HMS - Enterprise Production Docker Compose
+# Architecture: Next.js 15 + Laravel 13 API + Nginx + PostgreSQL 15 + Redis 7 + Queue Worker
+# Target Server: 16.176.178.159
+# ============================================
+
+services:
+  # 1. Next.js 15 Frontend
+  front:
+    build:
+      context: ../front
+      dockerfile: ../deploy/docker/Dockerfile.front.prod
+    image: hms_front:prod
+    container_name: hms_front_prod
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://16.176.178.159:8081/api/v1
+    networks:
+      - hms-prod-network
+    depends_on:
+      - app
+
+  # 2. Laravel 13 PHP 8.4-FPM Core API
+  app:
+    build:
+      context: ../back
+      dockerfile: ../deploy/docker/Dockerfile.app
+    image: hms_app:prod
+    container_name: hms_app_prod
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ../back/storage:/var/www/storage
+      - ../back/bootstrap/cache:/var/www/bootstrap/cache
+      - ./php/prod.ini:/usr/local/etc/php/conf.d/prod.ini:ro
+    env_file:
+      - .env.production
+    networks:
+      - hms-prod-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 3. High-Performance Ingress Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: hms_nginx_prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8081"
+    volumes:
+      - ../back/public:/var/www/public:ro
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - hms-prod-network
+    depends_on:
+      - app
+      - front
+
+  # 4. Relational Database (PostgreSQL 15)
+  db:
+    image: postgres:15-alpine
+    container_name: hms_db_prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-hostel_saas}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecureProductionDbPass2026!}
+    volumes:
+      - hms-prod-db-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-hostel_saas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hms-prod-network
+
+  # 5. In-Memory Cache, Queue & Session Broker (Redis 7)
+  redis:
+    image: redis:7-alpine
+    container_name: hms_redis_prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-SecureProductionRedisPass2026!}"
+    volumes:
+      - hms-prod-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-SecureProductionRedisPass2026!}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hms-prod-network
+
+  # 6. Laravel Queue Worker (Asynchronous Emails, Invoices & SMS)
+  queue:
+    image: hms_app:prod
+    container_name: hms_queue_prod
+    restart: always
+    working_dir: /var/www
+    command: php artisan queue:work redis --sleep=3 --tries=3 --timeout=90
+    volumes:
+      - ../back/storage:/var/www/storage
+    env_file:
+      - .env.production
+    networks:
+      - hms-prod-network
+    depends_on:
+      - app
+      - redis
+
+  # 7. Laravel Scheduler (Night Audits, Overdue Lease Reminders)
+  scheduler:
+    image: hms_app:prod
+    container_name: hms_scheduler_prod
+    restart: always
+    working_dir: /var/www
+    command: php artisan schedule:work
+    volumes:
+      - ../back/storage:/var/www/storage
+    env_file:
+      - .env.production
+    networks:
+      - hms-prod-network
+    depends_on:
+      - app
+
+networks:
+  hms-prod-network:
+    name: hms-prod-network
+
+volumes:
+  hms-prod-db-data:
+  hms-prod-redis-data:
+

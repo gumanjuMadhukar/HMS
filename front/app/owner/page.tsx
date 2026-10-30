@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
+import { useToast } from '@/components/ToastContext';
 import { 
   Building2, 
   Key, 
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function OwnerPortalPage() {
+  const { success, error, info } = useToast();
   const [properties, setProperties] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -67,8 +69,9 @@ export default function OwnerPortalPage() {
       if (propsRes.data?.length > 0 && !selectedProperty) {
         setSelectedProperty(propsRes.data[0]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load owner data:', err);
+      error('Data Load Error', err.message || 'Could not retrieve portfolio assets.');
     } finally {
       setLoading(false);
     }
@@ -82,7 +85,7 @@ export default function OwnerPortalPage() {
     e.preventDefault();
     try {
       await hmsApi.createOwnerProperty(propertyForm);
-      alert('Property created successfully!');
+      success('Property Registered', `${propertyForm.name} registered into your portfolio!`);
       setShowPropertyModal(false);
       setPropertyForm({
         name: '',
@@ -99,7 +102,7 @@ export default function OwnerPortalPage() {
       });
       loadData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create property');
+      error('Registration Failed', err.message || 'Failed to create property');
     }
   };
 
@@ -108,7 +111,7 @@ export default function OwnerPortalPage() {
     try {
       const propId = Number(roomForm.property_id || selectedProperty?.id || properties[0]?.id);
       await hmsApi.createOwnerRoom(propId, roomForm);
-      alert('Room & bed capacity initialized successfully!');
+      success('Unit Provisioned', `Room ${roomForm.room_number} added with capacity ${roomForm.capacity}.`);
       setShowRoomModal(false);
       setRoomForm({
         property_id: propId,
@@ -122,7 +125,7 @@ export default function OwnerPortalPage() {
       });
       loadData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create room');
+      error('Creation Failed', err.message || 'Failed to create room');
     }
   };
 

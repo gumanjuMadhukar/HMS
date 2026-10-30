@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { hmsApi } from '@/lib/api';
 import Card3DTilt from '@/components/Card3DTilt';
+import { useToast } from '@/components/ToastContext';
 import { 
   Building2, 
   MapPin, 
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function HostelsPage() {
+  const { success, error } = useToast();
   const [hostels, setHostels] = useState<any[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [cityFilter, setCityFilter] = useState('');
@@ -73,9 +75,10 @@ export default function HostelsPage() {
         ...formData,
       });
       setAdmissionSuccess(res.data);
+      success('Hostel Admission Processed', `Student Voucher ${res.data.booking_code} generated with allocated dorm bed!`);
       setSelectedRoom(null);
     } catch (err: any) {
-      alert(err.message || 'Admission submission failed');
+      error('Admission Failed', err.message || 'Admission submission failed');
     } finally {
       setAdmissionLoading(false);
     }
