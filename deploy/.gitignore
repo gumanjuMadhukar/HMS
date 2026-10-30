@@ -1,0 +1,9 @@
+# Sensitive env files
+.env
+.env.local
+.env.deployment
+
+# Logs
+*.log
+adminlog.txt
+

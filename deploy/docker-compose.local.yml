@@ -1,0 +1,94 @@
+# ============================================
+# HMS - Docker Compose (Local Development)
+# Next.js Frontend (Port 3000) + Laravel 13 API (Port 8081)
+# ============================================
+
+services:
+  front:
+    build:
+      context: ../front
+      dockerfile: ../deploy/docker/Dockerfile.front
+    image: hms_front:local
+    container_name: hms_front
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ../front:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8082/api/v1
+    depends_on:
+      - nginx
+    networks:
+      - hms-network
+
+  app:
+    build:
+      context: ../back
+      dockerfile: ../deploy/docker/Dockerfile.app
+    image: hms_app:local
+    container_name: hms_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ../back:/var/www
+      - /var/www/vendor
+      - /var/www/node_modules
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - .:/var/www/deploy
+    env_file:
+      - .env.local
+    depends_on:
+      - db
+    networks:
+      - hms-network
+
+  db:
+    image: postgres:15
+    container_name: hms_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hostel_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - hms-db-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - hms-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: hms_nginx
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      - ../back/public:/var/www/public
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - hms-network
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hms_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - hms-network
+
+networks:
+  hms-network:
+    name: hms-network
+
+volumes:
+  hms-db-data:
