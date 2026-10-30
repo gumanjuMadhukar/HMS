@@ -5,7 +5,7 @@
 # ============================================
 
 services:
-  # 1. Next.js 15 Frontend
+  # 1. Next.js 15 Frontend 
   front:
     build:
       context: ../front
