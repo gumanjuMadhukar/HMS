@@ -196,68 +196,102 @@ export default function HostelsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {hostels.map(hostel => (
-              <Card3DTilt key={hostel.id} intensity={10} className="h-full">
-                <div className="h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border border-white/10 hover:border-emerald-400/50 transition duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2.5 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider ${
-                        hostel.gender_policy === 'boys_only'
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                          : hostel.gender_policy === 'girls_only'
-                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30'
-                          : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                      }`}>
-                        {hostel.gender_policy?.replace('_', ' ')}
-                      </span>
-                      <span className="text-2xs font-bold text-emerald-300 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-0.5 rounded-full">
-                        {hostel.city}, Nepal
-                      </span>
+            {hostels.map(hostel => {
+              const hostelImages: Record<string, string> = {
+                'apex-boys-hostel-baneshwor': 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80',
+                'green-valley-girls-hostel': 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80',
+              };
+              const defaultHostelImg = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80';
+              const coverImg = hostelImages[hostel.slug] || defaultHostelImg;
+
+              return (
+                <Card3DTilt key={hostel.id} intensity={10} className="h-full">
+                  <div className="h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border border-white/10 hover:border-emerald-400/50 transition duration-300 group overflow-hidden">
+                    {/* Visual Photo Banner */}
+                    <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden">
+                      <img
+                        src={coverImg}
+                        alt={hostel.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <span className="text-2xs font-extrabold text-emerald-300 bg-slate-950/80 backdrop-blur-md border border-emerald-400/40 px-2.5 py-1 rounded-full">
+                          {hostel.city}, Nepal
+                        </span>
+                      </div>
+                      <div className="absolute bottom-3 left-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-2xs font-extrabold uppercase tracking-wider backdrop-blur-md ${
+                          hostel.gender_policy === 'boys_only'
+                            ? 'bg-blue-500/80 text-white'
+                            : hostel.gender_policy === 'girls_only'
+                            ? 'bg-pink-500/80 text-white'
+                            : 'bg-purple-500/80 text-white'
+                        }`}>
+                          {hostel.gender_policy?.replace('_', ' ')}
+                        </span>
+                      </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{hostel.name}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {hostel.address}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-emerald-200 transition">{hostel.name}</h3>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {hostel.address}
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                        {hostel.description}
                       </p>
-                    </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
-                      {hostel.description}
-                    </p>
+                      {/* Room & Dorm Beds Roster */}
+                      <div className="pt-3 border-t border-white/10 space-y-2">
+                        <span className="text-2xs font-black uppercase tracking-wider text-emerald-400 block">
+                          Dorms & Sharing Rooms ({hostel.rooms?.length || 0})
+                        </span>
 
-                    {/* Room & Dorm Beds Roster */}
-                    <div className="pt-3 border-t border-white/10 space-y-2">
-                      <span className="text-2xs font-black uppercase tracking-wider text-emerald-400 block">
-                        Dorms & Sharing Rooms ({hostel.rooms?.length || 0})
-                      </span>
+                        {hostel.rooms?.map((room: any) => (
+                          <div
+                            key={room.id}
+                            className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-2 hover:border-white/15 transition"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-bold text-white block text-xs">
+                                  Room {room.room_number} ({room.type})
+                                </span>
+                                <span className="text-2xs text-slate-400">Capacity: {room.capacity} Scholars</span>
+                              </div>
 
-                      {hostel.rooms?.map((room: any) => (
-                        <div
-                          key={room.id}
-                          className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-2 hover:border-white/15 transition"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-bold text-white block text-xs">
-                                Room {room.room_number} ({room.type})
-                              </span>
-                              <span className="text-2xs text-slate-400">Capacity: {room.capacity} Scholars</span>
-                            </div>
-
-                            <div className="text-right">
-                              <span className="font-mono font-bold text-emerald-300 block text-xs">
-                                NPR {Number(room.price_per_month).toLocaleString()}
-                                <span className="text-2xs text-slate-500 font-normal"> /mo</span>
-                              </span>
-                              <button
-                                onClick={() => setSelectedRoom(room)}
-                                className="mt-1 px-3 py-1 rounded-xl text-2xs font-bold bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-sm transition"
-                              >
-                                Apply Admission
-                              </button>
+                              <div className="text-right">
+                                <span className="font-mono font-bold text-emerald-300 block text-xs">
+                                  NPR {Number(room.price_per_month).toLocaleString()}
+                                  <span className="text-2xs text-slate-500 font-normal"> /mo</span>
+                                </span>
+                                <button
+                                  onClick={() => setSelectedRoom(room)}
+                                  className="mt-1 px-3 py-1 rounded-xl text-2xs font-bold bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-sm transition"
+                                >
+                                  Apply Admission
+                                </button>
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-2xs text-slate-400">
+                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <Utensils className="w-3.5 h-3.5" /> 4-Meal Chef Mess Included
+                      </span>
+                      <span className="font-mono text-amber-300">{hostel.currency || 'NPR'}</span>
+                    </div>
+                  </div>
+                </Card3DTilt>
+              );
+            })}
 
                           {/* Dorm Bed Badges */}
                           {room.beds && room.beds.length > 0 && (

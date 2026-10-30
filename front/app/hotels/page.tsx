@@ -194,76 +194,94 @@ export default function HotelsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {hotels.map(hotel => (
-              <Card3DTilt key={hotel.id} intensity={10} className="h-full">
-                <div className="h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border border-white/10 hover:border-amber-400/50 transition duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-amber-400">
+            {hotels.map(hotel => {
+              const hotelImages: Record<string, string> = {
+                'himalayan-horizon-resort': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+                'kathmandu-heritage-boutique': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+              };
+              const defaultHotelImg = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80';
+              const coverImg = hotelImages[hotel.slug] || defaultHotelImg;
+
+              return (
+                <Card3DTilt key={hotel.id} intensity={10} className="h-full">
+                  <div className="h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border border-white/10 hover:border-amber-400/50 transition duration-300 group overflow-hidden">
+                    {/* Visual Photo Banner */}
+                    <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden">
+                      <img
+                        src={coverImg}
+                        alt={hotel.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <span className="text-2xs font-extrabold text-amber-300 bg-slate-950/80 backdrop-blur-md border border-amber-400/40 px-2.5 py-1 rounded-full">
+                          {hotel.city}, Nepal
+                        </span>
+                      </div>
+                      <div className="absolute bottom-3 left-4 flex items-center gap-1 text-amber-400">
                         {Array.from({ length: hotel.star_rating || 3 }).map((_, i) => (
                           <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
                         ))}
                       </div>
-                      <span className="text-2xs font-extrabold text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
-                        {hotel.city}, Nepal
-                      </span>
                     </div>
 
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{hotel.name}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-amber-400" /> {hotel.address}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-amber-200 transition">{hotel.name}</h3>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" /> {hotel.address}
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                        {hotel.description}
                       </p>
+
+                      {/* Room Inventory */}
+                      <div className="pt-3 border-t border-white/10 space-y-2">
+                        <span className="text-2xs font-black uppercase tracking-wider text-amber-400 block">
+                          Available Accommodations ({hotel.rooms?.length || 0})
+                        </span>
+
+                        {hotel.rooms?.map((room: any) => (
+                          <div
+                            key={room.id}
+                            className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-white/5 text-xs hover:border-white/15 transition"
+                          >
+                            <div>
+                              <span className="font-bold text-white block">
+                                Room {room.room_number} ({room.type})
+                              </span>
+                              <span className="text-2xs text-slate-400">Capacity: {room.capacity} Guests</span>
+                            </div>
+
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-amber-300 block text-xs">
+                                NPR {Number(room.price_per_night).toLocaleString()}
+                                <span className="text-2xs text-slate-500 font-normal"> /nt</span>
+                              </span>
+                              <button
+                                onClick={() => setSelectedRoom(room)}
+                                className="mt-1 px-3 py-1 rounded-xl text-2xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm transition"
+                              >
+                                Reserve
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
-                      {hotel.description}
-                    </p>
-
-                    {/* Room Inventory */}
-                    <div className="pt-3 border-t border-white/10 space-y-2">
-                      <span className="text-2xs font-black uppercase tracking-wider text-amber-400 block">
-                        Available Accommodations ({hotel.rooms?.length || 0})
+                    <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-2xs text-slate-400">
+                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Instant Confirmation
                       </span>
-
-                      {hotel.rooms?.map((room: any) => (
-                        <div
-                          key={room.id}
-                          className="flex items-center justify-between p-3 rounded-2xl bg-slate-950/60 border border-white/5 text-xs hover:border-white/15 transition"
-                        >
-                          <div>
-                            <span className="font-bold text-white block">
-                              Room {room.room_number} ({room.type})
-                            </span>
-                            <span className="text-2xs text-slate-400">Capacity: {room.capacity} Guests</span>
-                          </div>
-
-                          <div className="text-right">
-                            <span className="font-mono font-bold text-amber-300 block text-xs">
-                              NPR {Number(room.price_per_night).toLocaleString()}
-                              <span className="text-2xs text-slate-500 font-normal"> /nt</span>
-                            </span>
-                            <button
-                              onClick={() => setSelectedRoom(room)}
-                              className="mt-1 px-3 py-1 rounded-xl text-2xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm transition"
-                            >
-                              Reserve
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                      <span className="font-mono text-amber-300">{hotel.currency || 'NPR'}</span>
                     </div>
                   </div>
-
-                  <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-2xs text-slate-400">
-                    <span className="flex items-center gap-1 text-emerald-400">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Instant Confirmation
-                    </span>
-                    <span>Currency: {hotel.currency || 'NPR'}</span>
-                  </div>
-                </div>
-              </Card3DTilt>
-            ))}
+                </Card3DTilt>
+              );
+            })}
           </div>
         )}
       </main>

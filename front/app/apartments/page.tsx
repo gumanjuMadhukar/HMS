@@ -356,30 +356,48 @@ export default function ApartmentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {apartments.map(apt => {
               const tierMeta = getTierMeta(apt.star_rating);
+              const aptImages: Record<string, string> = {
+                'patan-bakhundole-budget-studio': 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80',
+                'jhamsikhel-executive-2bhk-residence': 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
+                'lakeside-presidential-villa-penthouse': 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80',
+              };
+              const defaultAptImg = 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80';
+              const coverImg = aptImages[apt.slug] || defaultAptImg;
+
               return (
                 <Card3DTilt key={apt.id} intensity={10} className="h-full">
-                  <div className={`h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border ${tierMeta.border} hover:border-amber-400/60 transition duration-300 relative group`}>
-                    <div className="space-y-4">
-                      {/* Top Header Badge */}
-                      <div className="flex items-center justify-between">
-                        <span className="px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider bg-white/5 border border-white/10 text-amber-300">
+                  <div className={`h-full flex flex-col justify-between luxury-glass rounded-3xl p-6 border ${tierMeta.border} hover:border-amber-400/60 transition duration-300 relative group overflow-hidden`}>
+                    {/* Visual Photo Banner */}
+                    <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden">
+                      <img
+                        src={coverImg}
+                        alt={apt.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 ease-out"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
+                      <div className="absolute top-3 left-4">
+                        <span className="px-3 py-1 rounded-full text-2xs font-black uppercase tracking-wider backdrop-blur-md bg-slate-950/80 border border-white/20 text-amber-300">
                           {tierMeta.badge}
                         </span>
-                        <span className="text-2xs font-extrabold text-slate-300 bg-slate-900 px-2.5 py-0.5 rounded-full border border-white/10">
+                      </div>
+                      <div className="absolute top-3 right-4">
+                        <span className="text-2xs font-extrabold text-slate-300 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
                           {apt.city}, Nepal
                         </span>
                       </div>
+                    </div>
 
+                    <div className="space-y-4">
                       <div>
                         <h3 className="text-xl font-bold text-white group-hover:text-amber-200 transition">
                           {apt.name}
                         </h3>
                         <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3.5 h-3.5 text-amber-400" /> {apt.address}
+                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" /> {apt.address}
                         </p>
                       </div>
 
-                      <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                         {apt.description}
                       </p>
 
@@ -407,6 +425,39 @@ export default function ApartmentsPage() {
                             className="p-3 rounded-2xl bg-slate-950/70 border border-white/5 flex items-center justify-between text-xs"
                           >
                             <div>
+                              <span className="font-bold text-white block">
+                                {room.room_number} ({room.type.toUpperCase()})
+                              </span>
+                              <span className="text-2xs text-slate-400">Capacity: {room.capacity} Persons</span>
+                            </div>
+
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-amber-300 block text-xs">
+                                NPR {Number(room.price_per_month).toLocaleString()}
+                                <span className="text-2xs text-slate-500 font-normal"> /mo</span>
+                              </span>
+                              <button
+                                onClick={() => handleOpenBooking(apt, room, tierMeta.label)}
+                                className="mt-1 px-3 py-1 rounded-xl text-2xs font-black bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-md transition"
+                              >
+                                Lease Unit
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-2xs text-slate-400">
+                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified Lease Agreement
+                      </span>
+                      <span className="font-mono text-amber-300">{apt.currency || 'NPR'}</span>
+                    </div>
+                  </div>
+                </Card3DTilt>
+              );
+            })}
                               <span className="font-bold text-white block">
                                 {room.room_number} ({room.type.toUpperCase()})
                               </span>
