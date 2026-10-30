@@ -30,9 +30,16 @@ if [ ! -f "$DEPLOY_DIR/.env.production" ]; then
     sed -i "s|APP_KEY=.*|APP_KEY=$NEW_KEY|" "$DEPLOY_DIR/.env.production"
 fi
 
+# Ensure storage directories exist on host
+mkdir -p "$PROJECT_ROOT/back/storage/framework/cache" \
+         "$PROJECT_ROOT/back/storage/framework/sessions" \
+         "$PROJECT_ROOT/back/storage/framework/views" \
+         "$PROJECT_ROOT/back/storage/logs" \
+         "$PROJECT_ROOT/back/bootstrap/cache"
+
 # 2. Pull / Build Production Docker Containers
 echo "🐳 Building and orchestrating production containers..."
-docker compose -f "$DEPLOY_DIR/docker-compose.prod.yml" build --pull front app
+docker compose -f "$DEPLOY_DIR/docker-compose.prod.yml" build front app
 docker compose -f "$DEPLOY_DIR/docker-compose.prod.yml" up -d --remove-orphans
 
 # 3. Wait for PostgreSQL and Redis Health
@@ -51,8 +58,8 @@ echo "🗄️ Executing database migrations..."
 docker exec hms_app_prod php artisan migrate --force
 
 # Check if tables need seeding
-TABLE_COUNT=$(docker exec hms_db_prod psql -U postgres -d hostel_saas -t -c "SELECT COUNT(*) FROM properties;" 2>/dev/null || echo "0")
-if [ "$TABLE_COUNT" -eq 0 ] || [ "$FORCE_SEED" = "true" ]; then
+TABLE_COUNT=$(docker exec hms_db_prod psql -U postgres -d hostel_saas -t -c "SELECT COUNT(*) FROM properties;" 2>/dev/null | tr -d ' ' | tr -d '\n' || echo "0")
+if [ -z "$TABLE_COUNT" ] || [ "$TABLE_COUNT" = "0" ] || [ "$FORCE_SEED" = "true" ]; then
     echo "🌱 Seeding demo hotels, hostels, serviced apartments, and RBAC matrix..."
     docker exec hms_app_prod php artisan db:seed --force
 fi
